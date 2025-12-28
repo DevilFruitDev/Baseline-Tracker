@@ -4,6 +4,9 @@ import { getAllSessions, deleteSession } from '../utils/storage';
 import { getBottom3WeakestTests, getCategoryScoreSummary, compareWithPreviousSession } from '../utils/comparison';
 import { getScoreColor, formatResultValue, getNextTarget } from '../utils/scoring';
 import { getTestById } from '../data/tests';
+import { TrainingHeatmap } from './TrainingHeatmap';
+import { ProgressChart } from './ProgressChart';
+import { AICoach } from './AICoach';
 
 interface DashboardProps {
   onNewSession: () => void;
@@ -14,7 +17,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSession, refreshTrigger }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ai'>('overview');
 
   useEffect(() => {
     loadSessions();
@@ -116,6 +119,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
             />
           </label>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-8 bg-white rounded-xl p-2 shadow-md border border-gray-200">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+              activeTab === 'overview'
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            📊 Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+              activeTab === 'analytics'
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            📈 Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+              activeTab === 'ai'
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            🤖 AI Coach
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
 
         {/* Latest Session Summary */}
         {latestSession && (
@@ -333,6 +374,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
             </div>
           )}
         </div>
+          </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-8">
+            <TrainingHeatmap sessions={sessions} />
+            <ProgressChart sessions={sessions} />
+          </div>
+        )}
+
+        {/* AI Coach Tab */}
+        {activeTab === 'ai' && (
+          <div>
+            <AICoach sessions={sessions} />
+          </div>
+        )}
       </div>
     </div>
   );
