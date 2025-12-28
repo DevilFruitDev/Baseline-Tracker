@@ -7,6 +7,8 @@ import { getTestById } from '../data/tests';
 import { TrainingHeatmap } from './TrainingHeatmap';
 import { ProgressChart } from './ProgressChart';
 import { AICoach } from './AICoach';
+import { ProfileSettings } from './ProfileSettings';
+import { CustomTestManager } from './CustomTestManager';
 
 interface DashboardProps {
   onNewSession: () => void;
@@ -17,7 +19,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSession, refreshTrigger }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ai' | 'settings'>('overview');
 
   useEffect(() => {
     loadSessions();
@@ -151,6 +153,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
             }`}
           >
             🤖 AI Coach
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+              activeTab === 'settings'
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            ⚙️ Settings
           </button>
         </div>
 
@@ -348,14 +360,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
 
                             return (
                               <div key={result.testId} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 transform transition-all duration-200 hover:scale-102 hover:shadow-md">
-                                <p className="text-sm font-semibold text-gray-900 mb-1">{test.name}</p>
-                                <div className="flex items-center justify-between mt-2">
-                                  <p className="font-bold text-lg">{formatResultValue(test, result)}</p>
-                                  {result.score && (
-                                    <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getScoreColor(result.score)}`}>
-                                      {result.score}
+                                <p className="text-sm font-semibold text-gray-900 mb-1">
+                                  {test.name}
+                                  {test.isBodyweightRelative && (
+                                    <span className="ml-2 text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full" title="Bodyweight-relative test">
+                                      BW
                                     </span>
                                   )}
+                                </p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <p className="font-bold text-lg">{formatResultValue(test, result)}</p>
+                                  <div className="flex flex-col items-end gap-1">
+                                    {result.score && (
+                                      <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getScoreColor(result.score)}`}>
+                                        {result.score}
+                                      </span>
+                                    )}
+                                    {test.isBodyweightRelative && result.bodyweightAdjustedScore && result.bodyweightAdjustedScore !== result.score && (
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${getScoreColor(result.bodyweightAdjustedScore)}`} title="Bodyweight-adjusted score">
+                                        BW: {result.bodyweightAdjustedScore}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 {hasDelta && (
                                   <p className={`text-xs mt-2 font-semibold ${comparison.delta! > 0 ? 'text-green-600' : comparison.delta! < 0 ? 'text-red-600' : 'text-gray-500'}`}>
@@ -389,6 +415,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
         {activeTab === 'ai' && (
           <div>
             <AICoach sessions={sessions} />
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-8">
+            <ProfileSettings />
+            <CustomTestManager />
           </div>
         )}
       </div>

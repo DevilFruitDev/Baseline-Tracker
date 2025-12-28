@@ -1,4 +1,5 @@
 import { TestDefinition } from '../types';
+import { EXTENDED_TESTS } from './extendedTests';
 
 export const TEST_DEFINITIONS: TestDefinition[] = [
   // Strength
@@ -9,12 +10,29 @@ export const TEST_DEFINITIONS: TestDefinition[] = [
     unit: 'reps',
     inputType: 'reps',
     instructions: 'Strict form, full extension to chin over bar',
+    isBodyweightRelative: true,
     benchmarks: {
       fail: 3,
       developing: 4,
       baseline: 5,
       strong: 8,
       elite: 15,
+      genderSpecific: {
+        male: {
+          fail: 3,
+          developing: 4,
+          baseline: 5,
+          strong: 10,
+          elite: 15,
+        },
+        female: {
+          fail: 1,
+          developing: 2,
+          baseline: 3,
+          strong: 6,
+          elite: 10,
+        },
+      },
     },
   },
   {
@@ -24,11 +42,26 @@ export const TEST_DEFINITIONS: TestDefinition[] = [
     unit: 'reps',
     inputType: 'reps',
     instructions: 'Chest to ground, full lockout',
+    isBodyweightRelative: true,
     benchmarks: {
       fail: 20,
       baseline: 25,
       strong: 40,
       elite: 60,
+      genderSpecific: {
+        male: {
+          fail: 20,
+          baseline: 30,
+          strong: 45,
+          elite: 65,
+        },
+        female: {
+          fail: 10,
+          baseline: 15,
+          strong: 25,
+          elite: 40,
+        },
+      },
     },
   },
   {
@@ -80,10 +113,10 @@ export const TEST_DEFINITIONS: TestDefinition[] = [
     inputType: 'time_mmss',
     instructions: '40 air squats / 30 push-ups / 20 sit-ups / 10 burpees',
     benchmarks: {
-      fail: 600, // 10:00 in seconds
-      baseline: 540, // 9:00
-      strong: 420, // 7:00
-      elite: 360, // 6:00
+      fail: 600,
+      baseline: 540,
+      strong: 420,
+      elite: 360,
       isLowerBetter: true,
     },
   },
@@ -99,6 +132,20 @@ export const TEST_DEFINITIONS: TestDefinition[] = [
       baseline: 1.5,
       strong: 1.8,
       elite: 2.1,
+      genderSpecific: {
+        male: {
+          fail: 1.5,
+          baseline: 1.7,
+          strong: 2.0,
+          elite: 2.3,
+        },
+        female: {
+          fail: 1.2,
+          baseline: 1.4,
+          strong: 1.6,
+          elite: 1.9,
+        },
+      },
     },
   },
   // Core
@@ -123,6 +170,7 @@ export const TEST_DEFINITIONS: TestDefinition[] = [
     unit: 'reps',
     inputType: 'reps',
     instructions: 'Controlled, knees to chest',
+    isBodyweightRelative: true,
     benchmarks: {
       fail: 6,
       baseline: 10,
@@ -192,11 +240,11 @@ export const TEST_DEFINITIONS: TestDefinition[] = [
 ];
 
 export const getTestById = (id: string): TestDefinition | undefined => {
-  return TEST_DEFINITIONS.find((test) => test.id === id);
+  return ALL_TESTS.find((test) => test.id === id);
 };
 
 export const getTestsByCategory = (): Record<string, TestDefinition[]> => {
-  return TEST_DEFINITIONS.reduce((acc, test) => {
+  return ALL_TESTS.reduce((acc, test) => {
     if (!acc[test.category]) {
       acc[test.category] = [];
     }
@@ -204,3 +252,6 @@ export const getTestsByCategory = (): Record<string, TestDefinition[]> => {
     return acc;
   }, {} as Record<string, TestDefinition[]>);
 };
+
+// Combined list of all tests (default + extended)
+export const ALL_TESTS = [...TEST_DEFINITIONS, ...EXTENDED_TESTS];

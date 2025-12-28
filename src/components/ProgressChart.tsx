@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Session } from '../types';
-import { TEST_DEFINITIONS } from '../data/tests';
+import { ALL_TESTS } from '../data/tests';
 import { format } from 'date-fns';
 
 interface ProgressChartProps {
@@ -26,7 +26,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ sessions }) => {
       selectedTests.forEach(testId => {
         const result = session.results.find(r => r.testId === testId);
         if (result) {
-          const test = TEST_DEFINITIONS.find(t => t.id === testId);
+          const test = ALL_TESTS.find(t => t.id === testId);
           if (test) {
             // Use parsed value for time tests, otherwise use regular value
             let value = result.parsedValue !== undefined ? result.parsedValue : result.value;
@@ -61,13 +61,13 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ sessions }) => {
   const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
   // Group tests by category
-  const testsByCategory = TEST_DEFINITIONS.reduce((acc, test) => {
+  const testsByCategory = ALL_TESTS.reduce((acc, test) => {
     if (!acc[test.category]) {
       acc[test.category] = [];
     }
     acc[test.category].push(test);
     return acc;
-  }, {} as Record<string, typeof TEST_DEFINITIONS>);
+  }, {} as Record<string, typeof ALL_TESTS>);
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
@@ -133,12 +133,12 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ sessions }) => {
               <Legend
                 wrapperStyle={{ paddingTop: '20px' }}
                 formatter={(value) => {
-                  const test = TEST_DEFINITIONS.find(t => t.id === value);
+                  const test = ALL_TESTS.find(t => t.id === value);
                   return test ? test.name : value;
                 }}
               />
               {selectedTests.map((testId, idx) => {
-                const test = TEST_DEFINITIONS.find(t => t.id === testId);
+                const test = ALL_TESTS.find(t => t.id === testId);
                 return (
                   <Line
                     key={testId}

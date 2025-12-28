@@ -1,4 +1,5 @@
-import { TestDefinition, ScoreLabel, Result } from '../types';
+import { TestDefinition, ScoreLabel, Result, UserProfile, Benchmark } from '../types';
+import { getUserProfile, getAgeFromProfile, getAgeRange } from './profile';
 
 export function scoreResult(test: TestDefinition, value: number | boolean | string): ScoreLabel {
   // Handle pass/fail tests
@@ -130,4 +131,108 @@ export function formatResultValue(test: TestDefinition, result: Result): string 
   }
 
   return result.value.toString();
+}
+
+/**
+ * Get appropriate benchmarks based on user profile (age/gender)
+ */
+export function getDynamicBenchmarks(test: TestDefinition, profile?: UserProfile): Benchmark {
+  if (!profile) {
+    profile = getUserProfile();
+  }
+
+  let benchmarks = { ...test.benchmarks };
+
+  // Apply gender-specific benchmarks if available
+  if (profile.gender && benchmarks.genderSpecific) {
+    if (profile.gender === 'male' && benchmarks.genderSpecific.male) {
+      benchmarks = { ...benchmarks, ...benchmarks.genderSpecific.male };
+    } else if (profile.gender === 'female' && benchmarks.genderSpecific.female) {
+      benchmarks = { ...benchmarks, ...benchmarks.genderSpecific.female };
+    }
+  }
+
+  // Apply age-adjusted benchmarks if available
+  const age = getAgeFromProfile(profile);
+  if (age && benchmarks.ageAdjusted) {
+    const ageRangeKey = getAgeRange(age);
+    if (benchmarks.ageAdjusted[ageRangeKey]) {
+      benchmarks = { ...benchmarks, ...benchmarks.ageAdjusted[ageRangeKey] };
+    }
+  }
+
+  return benchmarks;
+}
+
+/**
+ * Score a result with dynamic benchmarks (age/gender adjusted)
+ */
+export function scoreResultWithProfile(
+  test: TestDefinition,
+  value: number | boolean | string,
+  profile?: UserProfile
+): ScoreLabel {
+  if (test.inputType === 'pass_fail') {
+    return value === true ? 'Pass' : 'Fail';
+  }
+
+  const numValue = typeof value === 'number' ? value : parseFloat(value as string);
+  if (isNaN(numValue)) {
+    return 'Unknown';
+  }
+
+  const benchmarks = getDynamicBenchmarks(test, profile);
+  const isLowerBetter = benchmarks.isLowerBetter || false;
+
+  if (isLowerBetter) {
+    if (benchmarks.elite !== undefined && numValue <= benchmarks.elite) return 'Elite';
+    if (benchmarks.strong !== undefined && numValue <= benchmarks.strong) return 'Strong';
+    if (benchmarks.baseline !== undefined && numValue <= benchmarks.baseline) return 'Baseline';
+    if (benchmarks.fail !== undefined && numValue > benchmarks.fail) return 'Fail';
+    return 'Developing';
+  } else {
+    if (benchmarks.elite !== undefined && numValue >= benchmarks.elite) return 'Elite';
+    if (benchmarks.strong !== undefined && numValue >= benchmarks.strong) return 'Strong';
+    if (benchmarks.baseline !== undefined && numValue >= benchmarks.baseline) return 'Baseline';
+    if (benchmarks.developing !== undefined && numValue >= benchmarks.developing) return 'Developing';
+    if (benchmarks.fail !== undefined && numValue < benchmarks.fail) return 'Fail';
+    return 'Developing';
+  }
+}
+
+/**
+ * Calculate bodyweight-relative score using Wilks-like coefficient
+ * This adjusts bodyweight exercises (pull-ups, dips, etc.) to account for weight
+ */
+export function getBodyweightRelativeScore(
+  test: TestDefinition,
+  reps: number,
+  currentBodyweight: number,
+  profile?: UserProfile
+): { adjustedReps: number; score: ScoreLabel } {
+  if (!profile) {
+    profile = getUserProfile();
+  }
+
+  const baselineWeight = profile.baselineBodyweightLbs || currentBodyweight;
+
+  // Bodyweight coefficient: lighter = easier, heavier = harder
+  // Formula: adjustedReps = reps * (current / baseline)
+  // E.g., 10 pull-ups at 200 lbs is more impressive than 10 at 150 lbs
+  const weightRatio = currentBodyweight / baselineWeight;
+  const adjustedReps = Math.round(reps * weightRatio);
+
+  const score = scoreResultWithProfile(test, adjustedReps, profile);
+
+  return { adjustedReps, score };
+}
+
+/**
+ * Format bodyweight-relative display
+ */
+export function formatBodyweightRelative(reps: number, adjustedReps: number): string {
+  if (reps === adjustedReps) {
+    return `${reps} reps`;
+  }
+  return `${reps} reps (${adjustedReps} BW-adjusted)`;
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Session, Result } from '../types';
-import { TEST_DEFINITIONS, getTestsByCategory } from '../data/tests';
+import { ALL_TESTS, getTestsByCategory } from '../data/tests';
 import { saveSession, generateSessionId, getSessionById } from '../utils/storage';
-import { scoreResult, getScoreColor, parseTimeMMSS, formatSecondsToMMSS } from '../utils/scoring';
+import { scoreResultWithProfile, getScoreColor, parseTimeMMSS, formatSecondsToMMSS, getDynamicBenchmarks, getBodyweightRelativeScore } from '../utils/scoring';
+import { getUserProfile } from '../utils/profile';
 
 interface SessionEntryProps {
   sessionId?: string;
@@ -15,6 +16,7 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
   const [bodyweight, setBodyweight] = useState('');
   const [notes, setNotes] = useState('');
   const [results, setResults] = useState<Map<string, Result>>(new Map());
+  const profile = getUserProfile();
 
   useEffect(() => {
     if (sessionId) {
@@ -34,20 +36,31 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
   }, [sessionId]);
 
   const handleResultChange = (testId: string, value: string) => {
-    const test = TEST_DEFINITIONS.find((t) => t.id === testId);
+    const test = ALL_TESTS.find((t) => t.id === testId);
     if (!test) return;
 
     let resultValue: number | boolean | string = value;
     let parsedValue: number | undefined;
     let score;
+    let bodyweightAdjustedScore;
 
     switch (test.inputType) {
       case 'reps':
       case 'seconds':
       case 'miles':
+      case 'inches':
+      case 'percentage':
+      case 'weight_lbs':
         resultValue = value === '' ? '' : parseFloat(value);
         if (typeof resultValue === 'number' && !isNaN(resultValue)) {
-          score = scoreResult(test, resultValue);
+          // Use profile-aware scoring
+          score = scoreResultWithProfile(test, resultValue, profile);
+
+          // If bodyweight-relative test and we have current bodyweight, calculate adjusted score
+          if (test.isBodyweightRelative && bodyweight && parseFloat(bodyweight) > 0) {
+            const bwScore = getBodyweightRelativeScore(test, resultValue, parseFloat(bodyweight), profile);
+            bodyweightAdjustedScore = bwScore.score;
+          }
         }
         break;
 
@@ -55,13 +68,13 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
         resultValue = value;
         parsedValue = parseTimeMMSS(value) ?? undefined;
         if (parsedValue !== undefined) {
-          score = scoreResult(test, parsedValue);
+          score = scoreResultWithProfile(test, parsedValue, profile);
         }
         break;
 
       case 'pass_fail':
         resultValue = value === 'true';
-        score = scoreResult(test, resultValue);
+        score = scoreResultWithProfile(test, resultValue, profile);
         break;
     }
 
@@ -74,6 +87,7 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
         value: resultValue,
         parsedValue,
         score,
+        bodyweightAdjustedScore,
       });
     }
 
@@ -114,7 +128,7 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
     const result = results.get(testId);
     if (!result) return '';
 
-    const test = TEST_DEFINITIONS.find((t) => t.id === testId);
+    const test = ALL_TESTS.find((t) => t.id === testId);
     if (!test) return '';
 
     if (test.inputType === 'pass_fail') {
@@ -129,10 +143,11 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
   };
 
   const getBenchmarkHint = (testId: string): string => {
-    const test = TEST_DEFINITIONS.find((t) => t.id === testId);
+    const test = ALL_TESTS.find((t) => t.id === testId);
     if (!test) return '';
 
-    const { benchmarks } = test;
+    // Use dynamic benchmarks based on user profile (age/gender adjusted)
+    const benchmarks = getDynamicBenchmarks(test, profile);
     const isLowerBetter = benchmarks.isLowerBetter || false;
 
     if (test.inputType === 'pass_fail') {
@@ -267,9 +282,16 @@ export const SessionEntry: React.FC<SessionEntryProps> = ({ sessionId, onCancel,
                     {/* Score Label */}
                     <div className="lg:col-span-1">
                       {result?.score && (
-                        <span className={`inline-block text-xs px-2 py-1 rounded font-semibold ${getScoreColor(result.score)}`}>
-                          {result.score}
-                        </span>
+                        <div className="space-y-1">
+                          <span className={`inline-block text-xs px-2 py-1 rounded font-semibold ${getScoreColor(result.score)}`}>
+                            {result.score}
+                          </span>
+                          {test.isBodyweightRelative && result.bodyweightAdjustedScore && (
+                            <div className="text-xs text-blue-600 font-medium" title="Bodyweight-adjusted score">
+                              BW: {result.bodyweightAdjustedScore}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
