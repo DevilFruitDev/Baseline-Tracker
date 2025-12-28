@@ -1,6 +1,6 @@
-import { Session, SessionComparison, WeakTest, Result } from '../types';
-import { TEST_DEFINITIONS, getTestById } from '../data/tests';
-import { scoreResult, getScoreRankValue, formatResultValue } from './scoring';
+import { Session, SessionComparison, WeakTest } from '../types';
+import { getTestById } from '../data/tests';
+import { scoreResult, getScoreRankValue } from './scoring';
 
 export function compareWithPreviousSession(
   currentSession: Session,

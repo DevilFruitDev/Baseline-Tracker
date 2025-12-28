@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Session, WeakTest } from '../types';
 import { getAllSessions, deleteSession } from '../utils/storage';
 import { getBottom3WeakestTests, getCategoryScoreSummary, compareWithPreviousSession } from '../utils/comparison';
@@ -32,7 +32,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
   };
 
   const latestSession = sessions[0];
-  const previousSession = sessions[1];
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6">

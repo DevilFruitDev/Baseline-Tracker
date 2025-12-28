@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Session, Result } from '../types';
 import { TEST_DEFINITIONS, getTestsByCategory } from '../data/tests';
 import { saveSession, generateSessionId, getSessionById } from '../utils/storage';
