@@ -53,6 +53,11 @@ export interface Result {
   note?: string;
   score?: ScoreLabel;
   bodyweightAdjustedScore?: ScoreLabel; // For bodyweight-relative tests
+  media?: {
+    type: 'photo' | 'video';
+    data: string; // base64 encoded
+    filename: string;
+  }[];
 }
 
 export interface Session {
