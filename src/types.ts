@@ -86,3 +86,43 @@ export interface WeakTest {
   value: number | boolean | string;
   rankValue: number; // For sorting (lower = weaker)
 }
+
+export interface WorkoutExercise {
+  name: string;
+  targetTest?: string; // Which baseline test this targets
+  sets?: number;
+  reps?: string; // e.g., "8-12", "AMRAP", "30 seconds"
+  duration?: string; // e.g., "3 x 30 seconds"
+  rest?: string; // e.g., "60 seconds", "2 minutes"
+  intensity?: string; // e.g., "RPE 7-8", "60% 1RM"
+  notes?: string;
+  formCues?: string[];
+}
+
+export interface WorkoutDay {
+  dayName: string; // e.g., "Day 1: Strength Focus", "Monday"
+  focus: string; // e.g., "Upper Body Strength", "Core & Mobility"
+  warmup?: string[];
+  exercises: WorkoutExercise[];
+  cooldown?: string[];
+  estimatedDuration?: number; // minutes
+}
+
+export interface WorkoutPlan {
+  id: string;
+  title: string;
+  createdDate: string;
+  startDate?: string;
+  endDate?: string;
+  weeklySchedule: WorkoutDay[];
+  goals: string[]; // What this plan aims to improve
+  focusAreas: string[]; // Which tests/categories this targets
+  progressionNotes?: string; // How to progress week-to-week
+  coachingNotes?: string; // AI mentor's guidance
+  isActive: boolean;
+  completedWorkouts?: {
+    date: string;
+    dayName: string;
+    notes?: string;
+  }[];
+}

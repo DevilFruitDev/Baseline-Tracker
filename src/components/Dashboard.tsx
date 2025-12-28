@@ -9,6 +9,7 @@ import { ProgressChart } from './ProgressChart';
 import { AICoach } from './AICoach';
 import { ProfileSettings } from './ProfileSettings';
 import { CustomTestManager } from './CustomTestManager';
+import { MyWorkouts } from './MyWorkouts';
 
 interface DashboardProps {
   onNewSession: () => void;
@@ -19,7 +20,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSession, refreshTrigger }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ai' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'workouts' | 'ai' | 'settings'>('overview');
 
   useEffect(() => {
     loadSessions();
@@ -143,6 +144,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
             }`}
           >
             📈 Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('workouts')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+              activeTab === 'workouts'
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            🏋️ My Workouts
           </button>
           <button
             onClick={() => setActiveTab('ai')}
@@ -408,6 +419,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewSession, onEditSessio
           <div className="space-y-8">
             <TrainingHeatmap sessions={sessions} />
             <ProgressChart sessions={sessions} />
+          </div>
+        )}
+
+        {/* My Workouts Tab */}
+        {activeTab === 'workouts' && (
+          <div>
+            <MyWorkouts />
           </div>
         )}
 

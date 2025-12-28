@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Session } from '../types';
 import { TEST_DEFINITIONS } from '../data/tests';
 import { formatResultValue } from '../utils/scoring';
+import { getBottom3WeakestTests } from '../utils/comparison';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -55,13 +56,14 @@ export const AICoach: React.FC<AICoachProps> = ({ sessions }) => {
 
   const getContextData = () => {
     if (sessions.length === 0) {
-      return "The user has no training sessions yet.";
+      return "The user has no training sessions yet. Encourage them to complete their first baseline test session.";
     }
 
     const latestSession = sessions[0];
     const sessionCount = sessions.length;
+    const weakTests = getBottom3WeakestTests(latestSession);
 
-    let context = `The user has completed ${sessionCount} training session${sessionCount > 1 ? 's' : ''}.
+    let context = `Your mentee has completed ${sessionCount} training session${sessionCount > 1 ? 's' : ''}.
 
 Latest session (${new Date(latestSession.dateISO).toLocaleDateString()}):
 Bodyweight: ${latestSession.bodyweightLbs} lbs
@@ -77,13 +79,20 @@ Test results:
       }
     });
 
+    context += `\nKey Areas for Development:`;
+    weakTests.forEach((weak, idx) => {
+      context += `\n${idx + 1}. ${weak.testName} (${weak.category}) - Score: ${weak.score}`;
+    });
+
     if (sessions.length > 1) {
       const previousSession = sessions[1];
-      context += `\nPrevious session (${new Date(previousSession.dateISO).toLocaleDateString()}):\n`;
+      context += `\n\nPrevious session (${new Date(previousSession.dateISO).toLocaleDateString()}):\n`;
       previousSession.results.forEach(result => {
         const test = TEST_DEFINITIONS.find(t => t.id === result.testId);
         if (test) {
-          context += `- ${test.name}: ${formatResultValue(test, result)}\n`;
+          const latestResult = latestSession.results.find(r => r.testId === result.testId);
+          const improvement = latestResult ? ' → improved!' : '';
+          context += `- ${test.name}: ${formatResultValue(test, result)}${improvement}\n`;
         }
       });
     }
@@ -112,12 +121,25 @@ Test results:
 
     try {
       const contextData = getContextData();
-      const systemPrompt = `You are a knowledgeable fitness coach analyzing a user's baseline fitness test results. You have access to their training data and should provide personalized, actionable advice.
+      const systemPrompt = `You are an experienced, supportive fitness coach and mentor. Your mentee is committed to improving their baseline fitness through structured training. Your role is to:
 
-User's Data:
+1. Analyze their test results with expertise and care
+2. Identify strengths to celebrate and weaknesses to develop
+3. Provide specific, actionable training advice
+4. Encourage consistent effort and progressive overload
+5. Treat them as a developing athlete with long-term potential
+
+Your Mentee's Current Status:
 ${contextData}
 
-Provide specific, encouraging feedback based on their actual performance. Reference specific tests and scores. Be concise but helpful.`;
+Communication Style:
+- Be encouraging but honest about areas needing work
+- Reference specific test results and scores in your guidance
+- Explain the "why" behind recommendations
+- Use motivational language that builds confidence
+- Focus on progressive development over quick fixes
+
+Provide concise, practical advice that empowers your mentee to take action.`;
 
       let response;
 
@@ -317,14 +339,34 @@ Provide specific, encouraging feedback based on their actual performance. Refere
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
+      <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-2">
+        {/* Quick Action Buttons */}
+        {sessions.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setInput("Create a detailed 4-week workout plan to improve my weakest areas. Include specific exercises, sets, reps, and weekly progression. Act as my coach developing me long-term.")}
+              disabled={!apiKey || isLoading}
+              className="px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-lg hover:bg-green-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              🏋️ Generate Workout Plan
+            </button>
+            <button
+              onClick={() => setInput("Analyze my recent progress and provide specific coaching feedback on what's working and what needs adjustment.")}
+              disabled={!apiKey || isLoading}
+              className="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg hover:bg-blue-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              📊 Progress Analysis
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            placeholder="Ask me anything about your training..."
+            placeholder="Ask your coach anything..."
             disabled={!apiKey}
             className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
@@ -336,6 +378,10 @@ Provide specific, encouraging feedback based on their actual performance. Refere
             Send
           </button>
         </div>
+
+        <p className="text-xs text-gray-500 text-center">
+          💡 Tip: Copy workout plans from chat and save them manually in the "My Workouts" tab
+        </p>
       </div>
     </div>
   );
